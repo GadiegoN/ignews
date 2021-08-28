@@ -1,11 +1,26 @@
-import Head from 'next/head';
 import React from 'react';
-import { getPrismicClient } from '../../services/prismic';
-import styles from './styles.module.scss';
-import Prismic from '@prismicio/client'
+
+import Head from 'next/head';
 import { GetStaticProps } from 'next';
 
-export default function Posts() {
+import { getPrismicClient } from '../../services/prismic';
+import Prismic from '@prismicio/client'
+import { RichText } from 'prismic-dom'
+
+import styles from './styles.module.scss';
+import Link from 'next/link';
+
+type Post = {
+    slug: string;
+    title: string;
+    excerpt: string;
+    updatedAt: string;
+}
+interface PostsProps {
+    posts 
+}
+
+export default function Posts({ posts }: PostsProps) {
     return (
         <>
             <Head>
@@ -14,26 +29,15 @@ export default function Posts() {
 
             <main className={styles.container}>
                 <div className={styles.posts}>
-                    <a href="#">
-                        <time>26 de agosto de 2021</time>
-                        <strong>Lorem ipsum dolor sit amet</strong>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Autem rerum ipsum minus quisquam perferendis expedita molestias in similique obcaecati, consequuntur enim veniam beatae porro a quibusdam, aut vel? Alias, perferendis.</p>
-                    </a>
-                    <a href="#">
-                        <time>26 de agosto de 2021</time>
-                        <strong>Lorem ipsum dolor sit amet</strong>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Autem rerum ipsum minus quisquam perferendis expedita molestias in similique obcaecati, consequuntur enim veniam beatae porro a quibusdam, aut vel? Alias, perferendis.</p>
-                    </a>
-                    <a href="#">
-                        <time>26 de agosto de 2021</time>
-                        <strong>Lorem ipsum dolor sit amet</strong>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Autem rerum ipsum minus quisquam perferendis expedita molestias in similique obcaecati, consequuntur enim veniam beatae porro a quibusdam, aut vel? Alias, perferendis.</p>
-                    </a>
-                    <a href="#">
-                        <time>26 de agosto de 2021</time>
-                        <strong>Lorem ipsum dolor sit amet</strong>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Autem rerum ipsum minus quisquam perferendis expedita molestias in similique obcaecati, consequuntur enim veniam beatae porro a quibusdam, aut vel? Alias, perferendis.</p>
-                    </a>
+                    { posts.map(post => (
+                        <Link href={`/posts/${post.slug}`}>
+                            <a key={post.slug}>
+                                <time>{post.updatedAt}</time>
+                                <strong>{post.title}</strong>
+                                <p>{post.excerpt}</p>
+                            </a>
+                    </Link>
+                    ))}
                 </div>
             </main>
         </>
@@ -50,10 +54,22 @@ export const getStaticProps: GetStaticProps = async () => {
        pageSize: 100,
    });
 
-//    console.log(response);
-   console.log(JSON.stringify(response, null, 2));
+   const posts = response.results.map(post => {
+       return {
+           slug: post.uid,
+           title: RichText.asText(post.data.title),
+           excerpt: post.data.content.find(content => content.type === 'paragraph')?.text ?? '',
+            updatedAt: new Date(post.last_publication_date).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            })
+       }
+   })
 
     return {
-        props: {}
+        props: {
+            posts
+        }
     }
 }
